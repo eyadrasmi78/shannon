@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #171717;
+  --color-surface-overlay: #262626;
+  --color-border-default: #333333;
+  --color-border-subtle: #222222;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+  border-radius: 4px;
+}
+
+/* Markdown prose styling for reports */
+.prose-shannon {
+  color: var(--color-text-primary);
+  line-height: 1.75;
+}
+.prose-shannon h1,
+.prose-shannon h2,
+.prose-shannon h3,
+.prose-shannon h4 {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+}
+.prose-shannon h1 { font-size: 1.875rem; }
+.prose-shannon h2 { font-size: 1.5rem; border-bottom: 1px solid var(--color-border-default); padding-bottom: 0.5em; }
+.prose-shannon h3 { font-size: 1.25rem; }
+.prose-shannon p { margin-bottom: 1em; }
+.prose-shannon a { color: var(--color-accent); text-decoration: underline; }
+.prose-shannon code {
+  background: var(--color-surface-overlay);
+  padding: 0.125em 0.375em;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+.prose-shannon pre {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.prose-shannon pre code {
+  background: transparent;
+  padding: 0;
+}
+.prose-shannon ul,
+.prose-shannon ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+.prose-shannon li { margin-bottom: 0.25em; }
+.prose-shannon table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+.prose-shannon th,
+.prose-shannon td {
+  border: 1px solid var(--color-border-default);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.prose-shannon th {
+  background: var(--color-surface-raised);
+  font-weight: 600;
+}
+.prose-shannon blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1em;
+  color: var(--color-text-secondary);
+  margin-bottom: 1em;
+}
+.prose-shannon hr {
+  border-color: var(--color-border-default);
+  margin: 2em 0;
+}
