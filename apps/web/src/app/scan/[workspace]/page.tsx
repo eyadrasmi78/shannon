@@ -99,20 +99,20 @@ export default function ScanDetailPage() {
             </Button>
           )}
           {isComplete && (
-            <>
-              <Link href={`/scan/${workspace}/report`}>
-                <Button variant="primary">
-                  <FileText className="h-4 w-4" />
-                  View Report
-                </Button>
-              </Link>
-              <Link href={`/scan/${workspace}/deliverables`}>
-                <Button variant="secondary">
-                  <FolderOpen className="h-4 w-4" />
-                  Deliverables
-                </Button>
-              </Link>
-            </>
+            <Link href={`/scan/${workspace}/report`}>
+              <Button variant="primary">
+                <FileText className="h-4 w-4" />
+                View Report
+              </Button>
+            </Link>
+          )}
+          {completedAgents > 0 && (
+            <Link href={`/scan/${workspace}/deliverables`}>
+              <Button variant="secondary">
+                <FolderOpen className="h-4 w-4" />
+                Deliverables ({completedAgents})
+              </Button>
+            </Link>
           )}
         </div>
       </div>
