@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Square, RotateCcw, FileText, FolderOpen } from 'lucide-react';
+import { Square, RotateCcw, FileText, FolderOpen, Loader2, Server, GitBranch, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { PipelineViz } from '@/components/pipeline-viz';
 import { MetricsPanel } from '@/components/metrics-panel';
 import { LogViewer } from '@/components/log-viewer';
@@ -17,12 +18,83 @@ function statusVariant(status: string): 'success' | 'warning' | 'danger' {
   return 'danger';
 }
 
+// === Initialization Indicator ===
+
+function InitializingView({ workspace, secondsWaiting }: { workspace: string; secondsWaiting: number }) {
+  // Determine which step we're likely on based on elapsed time
+  const steps = [
+    { label: 'Cloning repository', icon: GitBranch, doneAfter: 30 },
+    { label: 'Building Docker worker', icon: Server, doneAfter: 90 },
+    { label: 'Starting Temporal workflow', icon: Shield, doneAfter: 120 },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">{workspace}</h1>
+        <Badge variant="warning">initializing</Badge>
+      </div>
+
+      <Card className="max-w-lg">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 text-accent">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="font-medium">Setting up scan environment...</span>
+          </div>
+
+          <div className="space-y-3 ml-2">
+            {steps.map((step) => {
+              const isDone = secondsWaiting > step.doneAfter;
+              const isActive = !isDone && secondsWaiting <= step.doneAfter;
+              const Icon = step.icon;
+
+              return (
+                <div key={step.label} className="flex items-center gap-3">
+                  {isDone && (
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/20">
+                      <div className="h-2 w-2 rounded-full bg-success" />
+                    </div>
+                  )}
+                  {isActive && <Loader2 className="h-5 w-5 animate-spin text-accent" />}
+                  {!isDone && !isActive && (
+                    <div className="flex h-5 w-5 items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-border-default" />
+                    </div>
+                  )}
+                  <Icon className={`h-4 w-4 ${isDone ? 'text-success' : isActive ? 'text-accent' : 'text-text-muted'}`} />
+                  <span className={`text-sm ${isDone ? 'text-text-secondary' : isActive ? 'text-text-primary' : 'text-text-muted'}`}>
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-text-muted mt-4">
+            First scan takes 2-3 minutes to build the worker image. Subsequent scans start faster.
+          </p>
+
+          {secondsWaiting > 180 && (
+            <p className="text-xs text-warning">
+              This is taking longer than usual. Check if Docker is running on the server.
+            </p>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// === Main Page ===
+
 export default function ScanDetailPage() {
   const params = useParams<{ workspace: string }>();
   const workspace = params.workspace;
   const [session, setSession] = useState<SessionData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [secondsWaiting, setSecondsWaiting] = useState(0);
 
+  // Poll for session data
   useEffect(() => {
     let active = true;
 
@@ -30,13 +102,13 @@ export default function ScanDetailPage() {
       try {
         const res = await fetch(`/api/scan/${workspace}/status`);
         if (!res.ok) {
-          if (res.status === 404) setError('Workspace not found. It may still be initializing...');
+          if (res.status === 404 && active) setNotFound(true);
           return;
         }
         const data = await res.json();
         if (active) {
           setSession(data);
-          setError(null);
+          setNotFound(false);
         }
       } catch {
         // Network error, will retry
@@ -52,12 +124,29 @@ export default function ScanDetailPage() {
     };
   }, [workspace]);
 
-  async function handleStop(): Promise<void> {
-    await fetch(`/api/scan/${workspace}/stop`, { method: 'POST' });
+  // Count seconds while waiting for initialization
+  useEffect(() => {
+    if (session) return; // Stop counting once session appears
+
+    const interval = setInterval(() => {
+      setSecondsWaiting((s) => s + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [session]);
+
+  // Show initialization view when workspace doesn't exist yet
+  if (!session && notFound) {
+    return <InitializingView workspace={workspace} secondsWaiting={secondsWaiting} />;
   }
 
-  async function handleResume(): Promise<void> {
-    await fetch(`/api/scan/${workspace}/resume`, { method: 'POST' });
+  // Show loading spinner before first poll completes
+  if (!session && !notFound) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
   }
 
   const status = session?.session.status ?? 'in-progress';
@@ -68,6 +157,14 @@ export default function ScanDetailPage() {
   const completedAgents = session
     ? Object.values(session.metrics.agents).filter((a) => a.status === 'success').length
     : 0;
+
+  async function handleStop(): Promise<void> {
+    await fetch(`/api/scan/${workspace}/stop`, { method: 'POST' });
+  }
+
+  async function handleResume(): Promise<void> {
+    await fetch(`/api/scan/${workspace}/resume`, { method: 'POST' });
+  }
 
   return (
     <div className="space-y-6">
@@ -80,9 +177,6 @@ export default function ScanDetailPage() {
           </div>
           {session && (
             <p className="text-sm text-text-muted">{session.session.webUrl}</p>
-          )}
-          {error && !session && (
-            <p className="text-sm text-warning">{error}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
