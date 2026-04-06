@@ -4,11 +4,12 @@ import { startScan } from '@/lib/shannon-cli';
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const body = await request.json();
-    const { url, repo, workspace, configPath } = body as {
+    const { url, repo, workspace, configPath, gitToken } = body as {
       url?: string;
       repo?: string;
       workspace?: string;
       configPath?: string;
+      gitToken?: string;
     };
 
     if (!url || !repo) {
@@ -21,7 +22,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
     }
 
-    const opts = { url, repo, ...(workspace ? { workspace } : {}), ...(configPath ? { configPath } : {}) };
+    const opts = {
+      url,
+      repo,
+      ...(workspace ? { workspace } : {}),
+      ...(configPath ? { configPath } : {}),
+      ...(gitToken ? { gitToken } : {}),
+    };
     const workspaceName = startScan(opts);
     return NextResponse.json({ workspace: workspaceName });
   } catch (err) {
