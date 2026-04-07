@@ -54,10 +54,21 @@ function resolveRepo(repo: string, gitToken?: string): string {
     cloneUrl = cloneUrl.replace('https://github.com', `https://${gitToken}@github.com`);
   }
 
-  execSync(`git clone ${cloneUrl} ${localPath}`, {
-    timeout: 300_000,
-    stdio: 'ignore',
-  });
+  try {
+    execSync(`git clone ${cloneUrl} ${localPath}`, {
+      timeout: 300_000,
+      stdio: 'pipe',
+    });
+  } catch (err) {
+    const stderr = err instanceof Error && 'stderr' in err ? String((err as { stderr: unknown }).stderr) : '';
+    if (stderr.includes('could not read Username') || stderr.includes('Authentication failed')) {
+      throw new Error(
+        'Repository clone failed — this appears to be a private repo. ' +
+        'Please provide a GitHub token using the "Private repo?" option in the scan form.',
+      );
+    }
+    throw new Error(`Repository clone failed: ${stderr || 'unknown error'}`);
+  }
 
   return localPath;
 }
